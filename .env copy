@@ -1,0 +1,6 @@
+PORT=puerto que quieras usar
+# Datos que sacás de la web de Supabase (Settings -> API)
+SUPABASE_URL=ejemplo.com
+SUPABASE_KEY=public_key_ejemplo
+# La ruta al Excel que tenés en la red
+EXCEL_PATH=ruta de ejemplo de excel
