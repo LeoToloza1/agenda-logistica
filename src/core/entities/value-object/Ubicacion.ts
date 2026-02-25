@@ -4,70 +4,85 @@ export class Ubicacion {
     private constructor(
         public readonly lat: number,
         public readonly lng: number,
-        public readonly linkOriginal?: string //link original por las dudas
+        public readonly linkOriginal?: string
     ) { }
 
-
-    /**
-     * Crea una instancia de Ubicacion a partir de una cadena que represente una ubicación.
-     * Soporta los siguientes formatos:
-     * - Coordenadas GMS (31°56'29.2"S 65°10'21.4"W)
-     * - Enlaces de Google Maps o Google Maps shortlinks (goo.gl)
-     * @param input - Cadena que representa la ubicación
-     * @returns Instancia de Ubicación con los datos extraidos de la cadena
-     * @throws Error si el formato de la cadena no es reconocido
-     */
-    static fromString(input: string): Ubicacion {
-        // Caso 1: Coordenadas GMS (31°56'29.2"S 65°10'21.4"W)
-        if (input.includes('°')) {
-            return this.parseGMS(input);
+    static crearDesdeString(input: string): Ubicacion {
+        const inputTrim = input.trim();
+        if (inputTrim.includes('°')) {
+            return this.parsearGMS(inputTrim);
         }
-        if (input.includes('google.com/maps') || input.includes('goo.gl')) {
-            return this.parseUrl(input);
+        if (inputTrim.includes('maps') || inputTrim.includes('goo.gl')) {
+            return this.parsearUrl(inputTrim);
         }
-
-        throw new UbicacionInvalidaException("Formato de ubicación no reconocido");
+        throw new UbicacionInvalidaException(inputTrim); // Si no es ni GMS ni URL, es invalida
     }
 
-    /**
-     * Parsea una cadena de coodenadas GMS (31°56'29.2"S 65°10'21.4"W) en una instancia de Ubicación.
-     * @param gms - cadena que representa la ubicación en formato GMS
-     * @returns Instancia de Ubicación con los datos extraidos de la cadena
-     * @throws Error si el formato de la cadena no es reconocido
-     */
-    private static parseGMS(gms: string): Ubicacion {
-        const lat = this.convertGMSToDecimal(gms.split(' ')[0]);
-        const lng = this.convertGMSToDecimal(gms.split(' ')[1]);
+    private static parsearGMS(gms: string): Ubicacion {
+        // Regex para capturar Grados, Minutos, Segundos y Hemisferio (N,S,E,W)
+        const gmsRegex = /(\d+)°(\d+)'([\d.]+)"([NSEW])/g;
+        const matches = [...gms.matchAll(gmsRegex)];
+
+        if (matches.length < 2) {
+            throw new UbicacionInvalidaException("Formato GMS incompleto (falta lat o lng)");
+        }
+
+        const lat = this.convertirGMSADecimal(matches[0]);
+        const lng = this.convertirGMSADecimal(matches[1]);
+
         return new Ubicacion(lat, lng, gms);
     }
 
     /**
-     * Parsea una cadena que representa una URL de Google Maps o Google Maps shortlinks
-     * en una instancia de Ubicación.
-     * Soporta los siguientes formatos:
-     * - Enlaces de Google Maps (https://www.google.com/maps/.../@...,...)
-     * - Enlaces de Google Maps shortlinks (goo.gl/...)
-     * @param url - cadena que representa la URL de Google Maps o Google Maps shortlinks
-     * @returns Instancia de Ubicación con los datos extraidos de la cadena
+     * Intenta parsear un string que puede ser un link de Google Maps (largo o corto) o una URL de búsqueda/compartir
+     * y devuelve una instancia de Ubicacion con los valores parseados.
+     *
+     * Primero, intenta buscar @lat,lng en el link (links largos). Si no encuentra nada, intenta buscar q=lat,lng en el link (links de búsqueda/compartir).
+     * Si no encuentra nada en la URL, devuelve una instancia de Ubicacion con lat=0, lng=0 pero guardando el link original para que el front lo abra.
      */
-    private static parseUrl(url: string): Ubicacion {
-        const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-        const match = url.match(regex);
+    private static parsearUrl(url: string): Ubicacion {
+        // 1. Intentar buscar @lat,lng (Links largos)
+        const regexLong = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+        const matchLong = url.match(regexLong);
 
-        if (match) {
-            return new Ubicacion(parseFloat(match[1]), parseFloat(match[2]), url);
+        if (matchLong) {
+            return new Ubicacion(parseFloat(matchLong[1]), parseFloat(matchLong[2]), url);
         }
+
+        // 2. Intentar buscar q=lat,lng (Links de búsqueda/compartir)
+        const regexQuery = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
+        const matchQuery = url.match(regexQuery);
+
+        if (matchQuery) {
+            return new Ubicacion(parseFloat(matchQuery[1]), parseFloat(matchQuery[2]), url);
+        }
+
+        // Si es un link corto de goo.gl, a veces no trae la coordenada en el texto.
+        // En ese caso, devolvemos 0,0 pero guardamos el link para que el front lo abra.
         return new Ubicacion(0, 0, url);
     }
 
     /**
-     * Convierte una cadena que representa una coodenada GMS (grados, minutos, segundos)
-     * en un numero decimal que representa la coodenada en grados.
-     * @param gms - cadena que representa la coordenada en formato GMS
-     * @returns Numero decimal que representa la coordenada en grados
+     * Convierte un arreglo de matches de una expresion regular en un numero decimal que representa una coordenada geografica.
+     * La expresion regular debe tener el siguiente formato: (\d+)°(\d+)'([\d.]+)"([NSEW])
+     * 
+     * @param {RegExpMatchArray} match - Arreglo de matches de la expresion regular.
+     * @returns {number} - Numero decimal que representa la coordenada geografica.
      */
-    private static convertGMSToDecimal(gms: string): number {
+    private static convertirGMSADecimal(match: RegExpMatchArray): number {
+        const grados = parseInt(match[1]);
+        const minutos = parseInt(match[2]);
+        const segundos = parseFloat(match[3]);
+        const hemisferio = match[4];
 
-        return -31.9414;
+        // Formula: Grados + (Minutos/60) + (Segundos/3600)
+        let decimal = grados + (minutos / 60) + (segundos / 3600);
+
+        // Si es Sur (S) o Oeste (W), el valor debe ser negativo
+        if (hemisferio === 'S' || hemisferio === 'W') {
+            decimal = decimal * -1;
+        }
+
+        return parseFloat(decimal.toFixed(6)); // Limitamos a 6 decimales
     }
 }
