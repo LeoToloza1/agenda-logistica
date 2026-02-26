@@ -1,16 +1,19 @@
 import { Ubicacion } from "./value-object/Ubicacion.js";
 
 export class Cliente {
-    private id: number;
-    private nombre: string;
-    private apellido: string;
-    private localidad: string;
-    private direccion: string;
-    private telefono: string;
-    private confirmado: boolean;
-    private ubicacion: Ubicacion;
 
     constructor(
+        private readonly _id: number,
+        private _nombre: string,
+        private _apellido: string,
+        private _localidad: string,
+        private _direccion: string,
+        private _telefono: string,
+        private _confirmado: boolean,
+        private _ubicacion: Ubicacion
+    ) { }
+
+    static crear(
         id: number,
         nombre: string,
         apellido: string,
@@ -19,49 +22,35 @@ export class Cliente {
         telefono: string,
         confirmado: boolean,
         ubicacionRaw: string
-    ) {
-        this.id = id;
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.localidad = localidad;
-        this.direccion = direccion;
-        this.telefono = telefono;
-        this.confirmado = confirmado;
-
-        this.ubicacion = Ubicacion.crearDesdeString(ubicacionRaw);
+    ): Cliente {
+        const ubicacion = Ubicacion.crearDesdeString(ubicacionRaw);
+        return new Cliente(id, nombre, apellido, localidad, direccion, telefono, confirmado, ubicacion);
     }
 
-    /**
-     * Cambia la ubicacion del cliente por una nueva.
-     * 
-     * @param {string} nuevoLink - El nuevo link de Google Maps del cliente.
-     */
     public cambiarUbicacion(nuevoLink: string): void {
-        this.ubicacion = Ubicacion.crearDesdeString(nuevoLink);
+        this._ubicacion = Ubicacion.crearDesdeString(nuevoLink);
     }
 
 
-    /**
-     * Devuelve un objeto con los datos del cliente.
-     * @return {object} - Un objeto con los datos del cliente.
-     * @property {number} id - El ID del cliente.
-     * @property {string} nombreCompleto - El nombre completo del cliente.
-     * @property {string} localidad - La localidad del cliente.
-     * @property {object} coordenadas - Un objeto con las coordenadas del cliente.
-     * @property {number} coordenadas.lat - La latitud del cliente.
-     * @property {number} coordenadas.lng - La longitud del cliente.
-     * @property {string} urlMaps - La URL de Google Maps del cliente.
-     */
-    public obtenerDatos() {
+    get id() { return this._id; }
+    get nombreCompleto() { return `${this._nombre} ${this._apellido}`; }
+    get coordenadas() {
+        return { lat: this._ubicacion.lat, lng: this._ubicacion.lng };
+    }
+
+
+    public datosPrimitivos() {
         return {
-            id: this.id,
-            nombreCompleto: `${this.nombre} ${this.apellido}`,
-            localidad: this.localidad,
-            coordenadas: {
-                lat: this.ubicacion.lat,
-                lng: this.ubicacion.lng
-            },
-            urlMaps: this.ubicacion.linkOriginal
+            id_de: this._id,
+            nombre: this._nombre,
+            apellido: this._apellido,
+            localidad: this._localidad,
+            direccion: this._direccion,
+            telefono: this._telefono,
+            confirmado: this._confirmado,
+            latitud: this._ubicacion.lat,
+            longitud: this._ubicacion.lng,
+            google_maps_url: this._ubicacion.linkOriginal
         };
     }
 }
