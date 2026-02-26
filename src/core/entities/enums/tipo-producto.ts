@@ -1,0 +1,8 @@
+export enum TipoProducto {
+    ABERTURAS = 'ABERTURAS',
+    PUERTAS = 'PUERTAS',
+    PISOS = 'PISOS',
+    PREMARCOS = 'PREMARCOS',
+    MOSQUITEROS = 'MOSQUITERO',
+    VARIOS = 'VARIOS'
+}
