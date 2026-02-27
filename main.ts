@@ -1,5 +1,6 @@
 import { Cliente } from "./src/core/entities/Cliente";
 import { DetalleDeEntrega } from "./src/core/entities/detalleDeEntrega";
+import { EstadoEntrega } from "./src/core/entities/enums/EstadoEntrega";
 import { TipoProducto } from "./src/core/entities/enums/tipo-producto";
 import { Ubicacion } from "./src/core/entities/value-object/Ubicacion";
 
@@ -31,7 +32,7 @@ try {
         clienteTest,            // 4. _cliente
         TipoProducto.ABERTURAS, // 5. _tipo
         true,                   // 6. _confirmado
-        false,                  // 7. _entregado (Al inicio es false)
+        EstadoEntrega.EN_VIAJE,                  // 7. _entregado (Al inicio es false)
         "",                     // 8. _entregadoPor
         null,                   // 9. _fechaDeEntrega
         "Tocar timbre fuerte"   // 10. _observaciones
@@ -52,7 +53,8 @@ try {
         1,
         clienteTest,
         TipoProducto.PUERTAS,
-        false // _confirmado = false
+        false, // _confirmado = false
+        EstadoEntrega.REPROGRAMADO
     );
 
     console.log("\n--- PROBANDO REGLA DE NEGOCIO (EXCEPCIÓN) ---");
