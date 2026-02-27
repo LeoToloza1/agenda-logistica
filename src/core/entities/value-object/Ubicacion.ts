@@ -1,4 +1,4 @@
-import { UbicacionInvalidaException } from "../exceptions/UbicacionInvalida.js";
+import { UbicacionInvalidaException } from "../../exceptions/UbicacionInvalida.js";
 
 export class Ubicacion {
     private constructor(
