@@ -1,65 +1,67 @@
-import { Cliente } from "./src/core/entities/Cliente";
-import { DetalleDeEntrega } from "./src/core/entities/detalleDeEntrega";
-import { EstadoEntrega } from "./src/core/entities/enums/EstadoEntrega";
-import { TipoProducto } from "./src/core/entities/enums/tipo-producto";
-import { Ubicacion } from "./src/core/entities/value-object/Ubicacion";
+import { Cliente } from "./src/core/entities/Cliente.js";
+import { DetalleDeEntrega } from "./src/core/entities/detalleDeEntrega.js";
+import { HojaDeRuta } from "./src/core/entities/HojaDeRuta.js";
+import { TipoProducto } from "./src/core/entities/enums/tipo-producto.js";
+import { EstadoEntrega } from "./src/core/entities/enums/EstadoEntrega.js";
+import { Ubicacion } from "./src/core/entities/value-object/Ubicacion.js";
 
 try {
-    // 1. Mock de Ubicación (Probando el link de WhatsApp con @lat,lng)
-    const whatsappLink = "https://www.google.com/maps?q=-31.4167,-64.1833";
+    console.log("🚀 INICIANDO PRUEBA DE DOMINIO: LOGÍSTICA\n");
 
-    // 2. Mock de Cliente
-    const clienteTest = new Cliente(
-        101,            // ID interno o D.E.
-        "Juan",
-        "Perez",
-        "Córdoba",
-        "Av. Colon 123",
-        "3516123456",
-        true,           // Confirmado
-        Ubicacion.crearDesdeString(whatsappLink)    // El link que procesará Ubicacion.crearDesdeString
-    );
+    // 1. Creamos al Cliente (Datos estáticos)
+    const clienteJuan = new Cliente(101, "Juan", "Perez", "3516123456");
 
-    console.log("--- DATOS DEL CLIENTE ---");
-    console.log("Nombre Completo:", clienteTest.nombreCompleto);
-    console.log("Coordenadas extraídas:", clienteTest.coordenadas);
+    // 2. Definimos dos ubicaciones distintas (pueden ser links de WhatsApp o GMS)
+    const linkObraCentro = "https://www.google.com/maps/.../@"; // Simulado
+    const linkObraCountry = "https://www.google.com/maps?q=-31.9408054,-65.1821858&entry=gps&shh=CAE&lucs=,94259550,94297699,94284484,94231188,94280568,47071704,94218641,94282134,94286869&g_ep=CAISEjI1LjQ5LjkuODM4ODk5MTgzMBgAINeCAypRLDk0MjU5NTUwLDk0Mjk3Njk5LDk0Mjg0NDg0LDk0MjMxMTg4LDk0MjgwNTY4LDQ3MDcxNzA0LDk0MjE4NjQxLDk0MjgyMTM0LDk0Mjg2ODY5QgJBUg%3D%3D&skid=533bb165-138a-41cb-9b52-99470d1fb053&g_st=iw-31.4167, -64.1833"; // GMS decimal simple
 
-    // 3. Mock de Detalle de Entrega (Asociado al cliente de arriba)
+    // 3. Creamos dos Detalles de Entrega para el MISMO cliente pero distintas OBRA/UBICACIÓN
     const entrega1 = new DetalleDeEntrega(
-        null,                   // 1. _id
-        7075,                   // 2. _numeroDE
-        2,                      // 3. _cantidad
-        clienteTest,            // 4. _cliente
-        TipoProducto.ABERTURAS, // 5. _tipo
-        true,                   // 6. _confirmado
-        EstadoEntrega.EN_VIAJE,                  // 7. _entregado (Al inicio es false)
-        "",                     // 8. _entregadoPor
-        null,                   // 9. _fechaDeEntrega
-        "Tocar timbre fuerte"   // 10. _observaciones
-    );
-    console.log("\n--- ESTADO INICIAL DE ENTREGA ---");
-    console.log(`D.E. #${entrega1.numeroDE} - Entregado: ${entrega1.entregado}`);
-
-    // 4. Probar la regla de negocio: Registrar Entrega
-    console.log("\n--- REGISTRANDO ENTREGA ---");
-    entrega1.registrarEntrega("Chofer Leo");
-
-    console.log("Estado Final:", entrega1.toPrimitives());
-
-    // 5. Prueba de Error: Intentar crear una entrega NO confirmada y registrarla
-    const entregaFallida = new DetalleDeEntrega(
-        null,
-        2020,
-        1,
-        clienteTest,
-        TipoProducto.PUERTAS,
-        false, // _confirmado = false
-        EstadoEntrega.REPROGRAMADO
+        null, 7075, 2, clienteJuan, TipoProducto.ABERTURAS,
+        "Edificio Mirador - Piso 4", // Nombre de la obra
+        Ubicacion.crearDesdeString(linkObraCentro),              // Ubicación específica
+        "Arq. Roberto (11 2233-4455)", // Contacto en obra
+        true                         // Confirmado por administración
     );
 
-    console.log("\n--- PROBANDO REGLA DE NEGOCIO (EXCEPCIÓN) ---");
-    entregaFallida.registrarEntrega("Chofer Leo"); // Esto debería disparar tu EntregaInvalidaException
+    const entrega2 = new DetalleDeEntrega(
+        null, 7076, 5, clienteJuan, TipoProducto.PISOS,
+        "Casa Country Los Olivos",   // Otra obra distinta
+        Ubicacion.crearDesdeString(linkObraCountry),             // Otra ubicación
+        "Capataz Mario",             // Otro contacto
+        true                         // Confirmado
+    );
+
+    // 4. Creamos la Hoja de Ruta para el chofer "Leo"
+    const hojaHoy = new HojaDeRuta("HR-20260227-LEO", new Date(), "Leo");
+    hojaHoy.agregarEntrega(entrega1);
+    hojaHoy.agregarEntrega(entrega2);
+
+    // --- VERIFICACIÓN DE DATOS ---
+
+    console.log(`📍 Hoja de Ruta: ${hojaHoy.id} | Chofer: ${hojaHoy.chofer}`);
+    console.log(`📦 Total Bultos a cargar: ${hojaHoy.totalBultos}`);
+    console.log(`📊 Resumen por producto:`, hojaHoy.resumenCarga);
+
+    console.log("\n--- MAPA DE RUTA (Puntos de entrega) ---");
+    hojaHoy.mapaDeRuta.forEach(punto => {
+        console.log(`- DE #${punto.de} | Obra: ${punto.obra} | Coords: ${JSON.stringify(punto.coords)}`);
+    });
+
+    // 5. Simulación de proceso en la PWA
+    console.log("\n--- SIMULANDO REPARTO ---");
+    console.log(`Progreso inicial: ${hojaHoy.progreso}`);
+
+    entrega1.registrarEntrega("Leo");
+    console.log(`✅ Entrega #7075 registrada exitosamente.`);
+
+    console.log(`Progreso actual: ${hojaHoy.progreso}`);
+    console.log(`¿Finalizada?: ${hojaHoy.estaFinalizada ? "SÍ" : "NO"}`);
+
+    // 6. Ver primitivos de la Hoja de Ruta (Lo que iría a la base de datos)
+    console.log("\n--- DATOS PARA PERSISTENCIA (JSON) ---");
+    console.log(JSON.stringify(hojaHoy.toPrimitives(), null, 2));
 
 } catch (error: any) {
-    console.error(`❌ Error detectado: [${error.code}] ${error.message}`);
+    console.error(`\n❌ Error en el flujo: [${error.code || 'DOMINIO_ERROR'}] ${error.message}`);
 }
