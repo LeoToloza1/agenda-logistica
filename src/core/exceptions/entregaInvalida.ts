@@ -1,4 +1,4 @@
-import { ExceptionBase } from "../../../shared/exceptions/ExceptionBase.js";
+import { ExceptionBase } from "../../shared/exceptions/ExceptionBase.js";
 
 /**
  * Excepción lanzada cuando una entrega (D.E.) no cumple con las reglas de negocio

@@ -1,4 +1,4 @@
-import { ExceptionBase } from "../../../shared/exceptions/ExceptionBase.js";
+import { ExceptionBase } from "../../shared/exceptions/ExceptionBase.js";
 
 export class UbicacionInvalidaException extends ExceptionBase {
 
