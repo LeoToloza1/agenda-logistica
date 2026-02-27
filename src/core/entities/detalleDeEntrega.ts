@@ -1,6 +1,7 @@
 import { Cliente } from "./Cliente.js";
 import { TipoProducto } from "./enums/tipo-producto.js";
-import { EntregaInvalidaException } from "./exceptions/entregaInvalida.js";
+import { EntregaInvalidaException } from "../exceptions/entregaInvalida.js";
+import { EstadoEntrega } from "./enums/EstadoEntrega.js";
 
 export class DetalleDeEntrega {
     constructor(
@@ -10,7 +11,7 @@ export class DetalleDeEntrega {
         private _cliente: Cliente,
         private _tipo: TipoProducto,
         private _confirmado: boolean = false,
-        private _entregado: boolean = false,
+        private _entregado: EstadoEntrega = EstadoEntrega.PENDIENTE,
         private _entregadoPor: string = "",
         private _fechaDeEntrega: Date | null = null,
         private _observaciones: string = ""
@@ -27,7 +28,7 @@ export class DetalleDeEntrega {
             throw new EntregaInvalidaException(this._numeroDE, "No confirmada por administración.");
         }
 
-        this._entregado = true;
+        this._entregado = EstadoEntrega.ENTREGADO;
         this._entregadoPor = nombreChofer;
         this._fechaDeEntrega = new Date();
     }
